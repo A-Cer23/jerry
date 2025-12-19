@@ -1,15 +1,39 @@
-from typing import Union
-
+from db import create_db_and_tables, SessionDep, Request
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
+from sqlmodel import select, func
 
-app = FastAPI()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    create_db_and_tables()
+    yield
+
+app = FastAPI(lifespan=lifespan)
 
 
 @app.get("/")
-async def read_root():
+async def root():
     return {"Hello": "World"}
 
 
-@app.get("/items/{item_id}")
-async def read_item(item_id: int, q: Union[str, None] = None):
-    return {"item_id": item_id, "q": q}
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
+
+@app.post("/requests/")
+async def request(session: SessionDep) -> Request:
+    r = Request()
+    session.add(r)
+    session.commit()
+    session.refresh(r)
+    return r
+
+@app.get("/requests/")
+async def requests(session: SessionDep) -> dict:
+    statement = select(func.count()).select_from(Request)
+    total = session.exec(statement).one()
+    return {"total": total}
+

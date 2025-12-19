@@ -1,0 +1,74 @@
+services:
+  db:
+    container_name: jerry_db
+    image: postgres:latest
+    environment:
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_USER=admin
+      - POSTGRES_DB=jerry_api_db
+    ports:
+      - 5432:5432
+    volumes:
+      - db_data:/var/lib/postgresql
+
+
+  api:
+    container_name: jerry_api
+    build: 
+      context: .
+      dockerfile: ./api/Dockerfile.dev
+    environment:
+      db_host: db
+      db_port: 5432
+    ports:
+      - 8000:8000
+    volumes:
+      - ./api:/app/api
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8000/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    depends_on:
+      - db
+
+
+
+
+
+  prometheus:
+    image: prom/prometheus:latest
+    command: 
+    - --config.file=/etc/prometheus/prometheus.yml
+    - --web.enable-remote-write-receiver
+    ports:
+      - 9090:9090
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+
+  grafana:
+    image: grafana/grafana:main
+    ports:
+      - 3000:3000
+    volumes:
+      - grafana_storage:/var/lib/grafana
+
+
+
+  k6:
+    image: grafana/k6:master
+    environment:
+      - K6_PROMETHEUS_RW_SERVER_URL=http://prometheus:9090/api/v1/write
+    volumes:
+      - ./k6:/scripts
+    command: run -o experimental-prometheus-rw /scripts/script.ts
+    depends_on:
+      api:
+        condition: service_healthy
+      prometheus:
+        condition: service_started
+
+volumes:
+  db_data:
+  grafana_storage:
