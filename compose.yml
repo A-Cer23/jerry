@@ -28,5 +28,18 @@ services:
       - db
 
 
+  k6:
+    image: grafana/k6:master
+    
+    volumes:
+      - ./k6:/scripts
+    command: run /scripts/script.ts
+    depends_on:
+      - api
+
+      
+
+
+
 volumes:
   db_data:
