@@ -24,22 +24,24 @@ services:
       - 8000:8000
     volumes:
       - ./api:/app/api
+    healthcheck:
+      test: ["CMD", "wget", "http://0.0.0.0:8000/"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
     depends_on:
       - db
 
 
   k6:
     image: grafana/k6:master
-    
     volumes:
       - ./k6:/scripts
     command: run /scripts/script.ts
     depends_on:
-      - api
-
-      
-
-
+      api:
+        condition: service_healthy
 
 volumes:
   db_data:
