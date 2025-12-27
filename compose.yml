@@ -25,7 +25,7 @@ services:
     volumes:
       - ./api:/app/api
     healthcheck:
-      test: ["CMD", "wget", "http://127.0.0.1:8000/health"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8000/health || exit 1"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -39,8 +39,13 @@ services:
 
   prometheus:
     image: prom/prometheus:latest
+    command: 
+    - --config.file=/etc/prometheus/prometheus.yml
+    - --web.enable-remote-write-receiver
     ports:
       - 9090:9090
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
 
 
 
@@ -48,11 +53,9 @@ services:
     image: grafana/k6:master
     environment:
       - K6_PROMETHEUS_RW_SERVER_URL=http://prometheus:9090/api/v1/write
-    
     volumes:
       - ./k6:/scripts
-    
-    command: run --compatibility-mode=experimental_enhanced /scripts/script.ts
+    command: run -o experimental-prometheus-rw /scripts/script.ts
     depends_on:
       api:
         condition: service_healthy
