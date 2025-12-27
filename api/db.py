@@ -12,7 +12,7 @@ class Request(SQLModel, table=True):
     created_at: datetime.datetime = Field(default_factory=datetime.datetime.now)
 
 db_url = settings.get_db_url()
-engine = create_engine(db_url, echo=True)
+engine = create_engine(db_url, pool_size=10, max_overflow=0, echo_pool=True)
 
 
 def create_db_and_tables():

@@ -14,12 +14,17 @@ app = FastAPI(lifespan=lifespan)
 
 
 @app.get("/")
-def root():
+async def root():
     return {"Hello": "World"}
 
 
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
+
 @app.post("/requests/")
-def request(session: SessionDep) -> Request:
+async def request(session: SessionDep) -> Request:
     r = Request()
     session.add(r)
     session.commit()
@@ -27,7 +32,8 @@ def request(session: SessionDep) -> Request:
     return r
 
 @app.get("/requests/")
-def requests(session: SessionDep) -> dict:
+async def requests(session: SessionDep) -> dict:
     statement = select(func.count()).select_from(Request)
     total = session.exec(statement).one()
     return {"total": total}
+
