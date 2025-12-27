@@ -6,4 +6,7 @@ packages:
 
 
 TODO:
-- introduce testing for high loads (performance testing?)
+- introduce testing for high loads
+    - [x] k6 to perform performance testing
+    - [x] prometheus grabs results
+    - grafana to dashboard prometheus
